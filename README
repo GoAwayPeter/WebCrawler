@@ -1,0 +1,66 @@
+README
+
+To run this crawler, supply 1 command line argument (the site to crawl) in the 
+following command:
+
+    java -cp .:../libs/jgraphx.jar:../libs/jsoup-1.8.3.jar WebCrawl [SITE_TO_CRAWL]
+
+To compile:
+
+    javac -cp .:../libs/jgraphx.jar:../libs/jsoup-1.8.3.jar *.java
+
+
+The initial idea for the Web Crawler was to have a data structure consisting of
+various nodes, each with references to a list of other nodes. I was not initially 
+sure whether or not this type of linked structure should be doubly, or just singly
+linked, but as it turned out, single links worked fine, seeing as drawing the 
+links both ways would add mess to the already (extremely) cluttered site map.
+
+I hoped to simply scan through a page, find links, follow those links, scan
+the new page, and follow its links, until all links had been followed. I decided
+to use an HTML parser - JSoup - to parse each page and find all the links. I 
+also used a library called JGraphX to draw the resulting network in realtime,
+as the site was scanned. This was accomplished by passing any nodes to be drawn
+into a queue, which the Viewer consumed.
+
+There are only 3 classes in this crawler - the Node class, which has the crawl method
+that is called recursively, the WebCrawl class, which instantiates the first node, 
+and calls crawl on it, it also instantiates the Viewer class, which runs in a new 
+thread, so that it may draw the network of pages found in real time.
+
+The list of references to other nodes was originally going to be an ArrayList,
+however, I soon realised that there would be so much searching through the list 
+for a particular node, that this was completely inefficient, so I changed it to 
+a HashMap. This had the added benefit of being very easy to check if a particular
+key had been entered already, simplifying the process of checking whether a node
+had been indexed or not.
+
+Another problem was that many links on a webpage are relative, not absolute, however,
+this was easily resolved through some hunting through the JSoup API docs, where I 
+discovered that JSoup could automatically resolve relative links to absolute ones.
+
+There were many more unforeseen problems in the developing of this web crawler, 
+another being that some pages would redirect to a different address. This was problematic
+as it resulted in the same page being indexed more than once. The solution actually 
+turned out to be more simple than expected, as once an address had been followed, 
+I could simply use the JSoup API to get the location of page that was returned.
+For example, https://blog.gocardless.com would change to http://gocardless.com/blog
+
+There are a few flaws in this implementation, most notably that the layout of the 
+sitemap drawn by JGraphX serves no useful purpose in its current state, however it may
+just about display a very small website clearly. More work would be required for it 
+to clearly display a normally sized site, including experimenting with JGraphX's automatic
+layout system, or just simply writing a custom algorithm to place the nodes in a 
+hierarchical tree.
+
+This is also a very evil web-crawler, as it does not read any sites robots.txt, however
+this would be very easy to implement - it would simply download the robots.txt, grab 
+all links, append the domain to the beginning where necessary, and insert into a 
+blacklist, which all links would be checked against before the crawler followed them.
+
+Lastly, in its current state, the crawler does not actually record anything about each
+page it visits, aside from the name of the page, and the links on that page. If any more
+information about each page were desired, it would be a simple matter of extracting it
+with JSoups html parser. This could include simply saving the entire HTML document, as 
+well as all css pages, and javascript (assuming these are kept on the same domain,
+which may not necessarily be the case) and could be browsed at a later date.
